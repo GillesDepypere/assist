@@ -180,7 +180,7 @@ class TFModel(Model):
             #Early stopping
             if i == 0:
                 base_l = l
-            if l <= base_l * self.conf['early_stop']:
+            if l <= base_l * float(self.conf['early_stop']):
                 break
 
             writer.add_summary(s, i)
