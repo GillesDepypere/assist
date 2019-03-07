@@ -264,18 +264,18 @@ class TFModel(Model):
                 shutil.rmtree(os.path.join(self.expdir, v))
             os.makedirs(os.path.join(self.expdir, v))
 
-            # load the model
+        #load the model
         saver.restore(sess, os.path.join(self.expdir, 'logdir', 'model.ckpt'))
 
         outputs = {}
 
-        for i in range(int(len(features) / batch_size)):
-            batch_inputs = features[i * batch_size:(i + 1) * batch_size]
-            batch_lengths = lengths[i * batch_size:(i + 1) * batch_size]
-            batch_names = inputs.keys()[i * batch_size:(i + 1) * batch_size]
+        for i in range(int(len(features)/batch_size)):
+            batch_inputs = features[i*batch_size:(i+1)*batch_size]
+            batch_lengths = lengths[i*batch_size:(i+1)*batch_size]
+            batch_names = inputs.keys()[i*batch_size:(i+1)*batch_size]
             o, s, d = sess.run(
                 (probs, summary, to_store),
-                feed_dict={inp: batch_inputs, seq_length: batch_lengths})
+                feed_dict={inp:batch_inputs, seq_length:batch_lengths})
             for j, name in enumerate(batch_names):
                 outputs[name] = o[j]
                 for v, t in d.items():
@@ -285,23 +285,23 @@ class TFModel(Model):
         rem = features.shape[0] % batch_size
         if rem > 0:
             batch_inputs = np.concatenate(
-                [features[-rem:], np.array([dummy] * (batch_size - rem))])
+                [features[-rem:], np.array([dummy]*(batch_size-rem))])
             batch_lengths = np.concatenate(
-                [lengths[-rem:], np.array([0] * (batch_size - rem))])
+                [lengths[-rem:], np.array([0]*(batch_size-rem))])
             batch_names = inputs.keys()[-rem:]
             o, s, d = sess.run(
                 (probs, summary, to_store),
-                feed_dict={inp: batch_inputs, seq_length: batch_lengths})
+                feed_dict={inp:batch_inputs, seq_length:batch_lengths})
             for j, name in enumerate(batch_names):
                 outputs[name] = o[j]
                 for v, t in d.items():
                     np.save(os.path.join(self.expdir, v, '%s.npy' % name), t[j])
             if s:
-                writer.add_summary(s, int(len(features) / batch_size))
+                writer.add_summary(s, int(len(features)/batch_size))
 
         sess.close()
 
-        # get the task representation
+        #get the task representation
         tasks = {o: self.coder.decode(outputs[o], _sig_cross_entropy)
                  for o in outputs}
 
@@ -338,20 +338,20 @@ class TFModel(Model):
             directory: the directory where the model was saved
         '''
 
-        # create the logdir if it does not exist
+        #create the logdir if it does not exist
         if not os.path.isdir(os.path.join(self.expdir, 'logdir')):
             os.makedirs(os.path.join(self.expdir, 'logdir'))
 
-        # create the checkpoint file
+        #create the checkpoint file
         with open(
-                os.path.join(self.expdir, 'logdir', 'checkpoint'), 'w') as fid:
+            os.path.join(self.expdir, 'logdir', 'checkpoint'), 'w') as fid:
 
             fid.write('model_checkpoint_path: "%s"' % (
                 os.path.join(self.expdir, 'logdir', 'model.ckpt')))
             fid.write('all_model_checkpoint_paths: "%s"' % (
                 os.path.join(self.expdir, 'logdir', 'model.ckpt')))
 
-        # copy the model files
+        #copy the model files
         for f in glob.glob('%s*' % os.path.join(directory, 'model.ckpt')):
             shutil.copy(f, os.path.join(self.expdir, 'logdir'))
 
@@ -362,26 +362,25 @@ class TFModel(Model):
             directory: the directory where the model should be saved
         '''
 
-        # create the directory if it does not exist
+        #create the directory if it does not exist
         if not os.path.isdir(directory):
             os.makedirs(directory)
 
-        # create the checkpoint file
+        #create the checkpoint file
         with open(os.path.join(directory, 'checkpoint'), 'w') as fid:
             fid.write('model_checkpoint_path: "%s"' % (
                 os.path.join(directory, 'model.ckpt')))
             fid.write('all_model_checkpoint_paths: "%s"' % (
                 os.path.join(directory, 'model.ckpt')))
 
-        # copy the model files
+        #copy the model files
         for f in glob.glob(
                 '%s*' % os.path.join(self.expdir, 'logdir', 'model.ckpt')):
             shutil.copy(f, directory)
 
-
 def _sig_cross_entropy(v, x):
     '''compute the cross-entropy between v and x'''
 
-    # clip x to avoid nans
-    x = np.clip(x, np.finfo(np.float32).eps, 1 - np.finfo(np.float32).eps)
-    return -(v * np.log(x) + (1 - v) * np.log(1 - x)).sum()
+    #clip x to avoid nans
+    x = np.clip(x, np.finfo(np.float32).eps, 1-np.finfo(np.float32).eps)
+    return -(v*np.log(x) + (1-v)*np.log(1-x)).sum()
